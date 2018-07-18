@@ -6,7 +6,6 @@ import api from 'src/services/api'
 
 const state = {
   isLoggedIn: !!ls.get(STORAGE_AUTH_TOKEN),
-  authToken:ls.get(STORAGE_AUTH_TOKEN),
 }
 
 const getters = {
@@ -30,21 +29,31 @@ const actions = {
         ? await api.get(`/sessions/${lsToken}`)
         : await api.post('/sessions', { email, password })
       api.setHeader('x-auth-token', apiToken)
+      ls.set('STORAGE_AUTH_TOKEN',apiToken)
       if (!lsToken) {
         commit('LOGIN')
         router.push({ name: 'Wallet' })
       }
     } catch (err) {
-      if (lsToken) ls.remove(STORAGE_AUTH_TOKEN)
+      if (lsToken) ls.remove('STORAGE_AUTH_TOKEN')
       throw err
     }
   },
   async logout({ commit }) {
     try {
-      ls.set(STORAGE_AUTH_TOKEN, null)
-      ls.remove(STORAGE_AUTH_TOKEN)
+      await api.delete(`/sessions/${ls.get('STORAGE_AUTH_TOKEN')}`)
+      ls.remove('STORAGE_AUTH_TOKEN') 
       commit('LOGOUT')
       router.push({ name: 'SignIn' })
+    } catch (err) {
+      throw err
+    }
+  },
+  
+  async getTrans({ commit } ) {
+    try {
+      let response = await api.get(`/transactions/`)
+      return response.data.data
     } catch (err) {
       throw err
     }
